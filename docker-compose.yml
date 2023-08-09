@@ -1,0 +1,42 @@
+version: '3'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "65001:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    networks:
+      - server_base_network
+
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    ports:
+      - "65002:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - server_base_network
+
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '65003:80'
+      - '65004:81'
+      - '65005:443'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - server_base_network
+
+networks:
+  server_base_network:
+
+volumes:
+  jenkins_home:
+  npm_data:
