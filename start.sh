@@ -32,4 +32,5 @@ fi
 
 # Run docker-compose.yml
 echo "Running docker-compose..."
+docker build -t custom-jenkins .
 docker-compose -f docker-compose.yml up -d --build
