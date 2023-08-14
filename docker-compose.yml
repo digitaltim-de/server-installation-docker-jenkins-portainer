@@ -8,7 +8,7 @@ services:
       - "65000:8080"
       - "65001:50000"
     volumes:
-      - /var/jenkins_home:/var/jenkins_home
+      - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
     networks:
@@ -42,9 +42,9 @@ services:
     container_name: nginx-proxy-manager
     restart: always
     ports:
-      - '65003:80'
-      - '65004:81'
-      - '65005:443'
+      - '80:80'
+      - '81:81'
+      - '443:443'
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
