@@ -58,3 +58,4 @@ networks:
 volumes:
   jenkins_home:
   npm_data:
+  portainer_data:
