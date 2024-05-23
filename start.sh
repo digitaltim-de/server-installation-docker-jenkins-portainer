@@ -31,6 +31,25 @@ else
     echo "Docker Compose is already installed."
 fi
 
+
+# Install Cockpit from backports
+if ! command -v cockpit &> /dev/null; then
+    echo "Cockpit is not installed. Installing Cockpit from backports..."
+
+    # Import OS version details
+    . /etc/os-release
+
+    # Install Cockpit from backports
+    sudo apt install -t ${VERSION_CODENAME}-backports cockpit -y
+    sudo systemctl enable cockpit.socket
+    sudo systemctl start cockpit.socket
+
+    echo "Cockpit has been installed from backports."
+else
+    echo "Cockpit is already installed."
+fi
+
+
 # Run docker-compose.yml
 echo "Running docker-compose..."
 docker build -t custom-jenkins .

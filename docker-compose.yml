@@ -6,7 +6,6 @@ services:
     restart: always
     ports:
       - "65000:8080"
-      - "65001:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
@@ -26,29 +25,25 @@ services:
     networks:
       - server_base_network
 
-  portainer_agent:
-    image: portainer/agent:2.16.2
-    container_name: portainer_agent
-    restart: always
-    ports:
-      - "65006:9001"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/docker/volumes:/var/lib/docker/volumes
-    networks:
-      - server_base_network
-
   nginx-proxy-manager:
     image: 'jc21/nginx-proxy-manager:latest'
     container_name: nginx-proxy-manager
     restart: always
     ports:
-      - '80:80'
-      - '81:81'
-      - '443:443'
+      - '65001:81'
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - server_base_network
+
+  portainer_agent:
+    image: portainer/agent:2.16.2
+    container_name: portainer_agent
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
     networks:
       - server_base_network
 
