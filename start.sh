@@ -60,8 +60,8 @@ for arg in "$@"; do
     esac
 done
 
-# Check if required parameters were provided
-if [ -z "$hookurl" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ] {
+# Check for required arguments
+if [ -z "$hookurl" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ]; then
     echo "Error: hookurl, project, servername, and domain are required."
     usage
 fi
