@@ -4,10 +4,13 @@
 url=""
 change_password=0  # Control flag for changing the root password
 new_password=""    # Initialize the password variable as empty
+project=""
+servername=""
+domain=""
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --url=<url> [--newpassword=1]"
+    echo "Usage: $0 --url=<url> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain>"
     exit 1
 }
 
@@ -22,19 +25,34 @@ for arg in "$@"; do
             change_password=1
             shift # Remove --newpassword from processing
             ;;
+        --project=*)
+            project="${arg#*=}"
+            shift # Remove --project from processing
+            ;;
+        --servername=*)
+            servername="${arg#*=}"
+            shift # Remove --servername from processing
+            ;;
+        --domain=*)
+            domain="${arg#*=}"
+            shift # Remove --domain from processing
+            ;;
         *)
             usage # Unknown option
             ;;
     esac
 done
 
-# Check if URL was provided
-if [ -z "$url" ]; then
-    echo "Error: URL is required."
+# Check if required parameters were provided
+if [ -z "$url" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ]; then
+    echo "Error: URL, project name, server name, and domain are required."
     usage
 fi
 
 echo "Using URL: $url"
+echo "Project: $project"
+echo "Server Name: $servername"
+echo "Domain: $domain"
 
 # Generate a random password and update root password if requested
 if [ "$change_password" -eq 1 ]; then
@@ -44,9 +62,6 @@ if [ "$change_password" -eq 1 ]; then
 else
     echo "Root password change was not requested."
 fi
-
-# Post the new or empty password to the server
-curl -X POST "${url}?ip=$(hostname -I | awk '{print $1}')&password=$new_password"
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -85,7 +100,21 @@ else
     echo "Cockpit is already installed."
 fi
 
+# Install htop
+if ! command -v htop &> /dev/null; then
+    echo "htop is not installed. Installing htop..."
+    sudo apt install htop -y
+    echo "htop has been installed."
+else
+    echo "htop is already installed."
+fi
+
 # Run docker-compose.yml
 echo "Running docker-compose..."
 docker build -t custom-jenkins .
 docker-compose -f docker-compose.yml up -d --build
+
+# Post the new or empty password to the server as JSON
+curl -X POST "${url}" \
+    -H "Content-Type: application/json" \
+    -d "{\"ip\": \"$(hostname -I | awk '{print $1}')\", \"password\": \"$new_password\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\"}"
