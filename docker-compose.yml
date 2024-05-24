@@ -38,14 +38,6 @@ services:
     networks:
       - server_base_network
 
-  swarmpit-installer:
-    image: swarmpit/install:1.9
-    ports:
-      - "65003:888"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    container_name: swarmpit-installer
-
   portainer_agent:
     image: portainer/agent:latest
     container_name: portainer_agent

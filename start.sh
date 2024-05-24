@@ -109,12 +109,21 @@ else
     echo "htop is already installed."
 fi
 
+## Swarmpit
+docker run -it --rm \
+  --name swarmpit-installer \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  -e INTERACTIVE=0 \
+  -e STACK_NAME=swarmpit \
+  -e APP_PORT=65003 \
+  swarmpit/install:edge
+
 # Run docker-compose.yml
 echo "Running docker-compose..."
 docker build -t custom-jenkins .
 docker-compose -f docker-compose.yml up -d --build
 
-# Post the new or empty password to the server as JSON
+# Register the server with the backend
 curl -X POST "${url}" \
     -H "Content-Type: application/json" \
     -d "{\"ip\": \"$(hostname -I | awk '{print $1}')\", \"password\": \"$new_password\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\"}"
