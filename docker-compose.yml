@@ -1,11 +1,24 @@
 version: '3'
 services:
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: always
+    ports:
+      - '80:80'
+      - '65000:81'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - server_base_network
+
   jenkins:
     image: custom-jenkins
     container_name: jenkins
     restart: always
     ports:
-      - "65000:8080"
+      - "65001:8080"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
@@ -25,20 +38,10 @@ services:
     networks:
       - server_base_network
 
-  nginx-proxy-manager:
-    image: 'jc21/nginx-proxy-manager:latest'
-    container_name: nginx-proxy-manager
-    restart: always
-    ports:
-      - '65001:81'
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-    networks:
-      - server_base_network
-
   swarmpit-installer:
     image: swarmpit/install:1.9
+    ports:
+      - "65003:888"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     container_name: swarmpit-installer
