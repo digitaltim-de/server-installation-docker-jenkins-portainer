@@ -41,6 +41,19 @@ You can now run the `start.sh` script:
 chmod +x start.sh && ./start.sh
 ```
 
+## On Production
+
+On production you can use the following command to install the server with a new password, register the server under
+your url and set the project name, servername and domain.
+
+Just select an "ubuntu image" create your new server or droplet and after that execute the following command:
+
+```bash
+git clone https://github.com/digitaltim-de/server-installation-docker-jenkins-portainer.git && cd server-installation-docker-jenkins-portainer && chmod +x start.sh && ./start.sh --url=https://webhook.site/d564f0bf-8014-4df5-8059-93b7479f35de --newpassword=1 --project=myprojectname --servername=servername-like-myprojectname.php --domain=serverdomain
+```
+
+Your Server will be registered under your url and you will get a webhook notification with the servername and domain.
+
 ## After Installation ##
 
 ### Jenkins ###
