@@ -48,14 +48,14 @@ for arg in "$@"; do
             shift # Remove --serverip from processing
             ;;
         *)
-            usage # Unknown option
+            usage # Call usage function for unknown options
             ;;
     esac
 done
 
 # Check if required parameters were provided
 if [ -z "$url" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ] || [ -z "$serverip" ]; then
-    echo "Error: URL, project name, server name, serverip and domain are required."
+    echo "Error: URL, project name, server name, serverip, and domain are required."
     usage
 fi
 
@@ -129,13 +129,19 @@ else
 fi
 
 ## Swarmpit
-docker run -it --rm \
-  --name swarmpit-installer \
-  --volume /var/run/docker.sock:/var/run/docker.sock \
-  -e INTERACTIVE=0 \
-  -e STACK_NAME=swarmpit \
-  -e APP_PORT=65003 \
-  swarmpit/install:edge
+# Check if this node is a manager and then install Swarmpit
+if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "manager"; then
+    echo "This node is a manager. Installing Swarmpit."
+    docker run -it --rm \
+      --name swarmpit-installer \
+      --volume /var/run/docker.sock:/var/run/docker.sock \
+      -e INTERACTIVE=0 \
+      -e STACK_NAME=swarmpit \
+      -e APP_PORT=65003 \
+      swarmpit/install:edge
+else
+    echo "Warning: This node is not a manager. Swarmpit cannot be installed here and will be skipped."
+fi
 
 # Run docker-compose.yml
 echo "Running docker-compose..."
