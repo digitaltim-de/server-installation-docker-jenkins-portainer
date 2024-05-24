@@ -132,7 +132,7 @@ if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "
       swarmpit/install:edge
     echo "Running docker-compose..."
     docker build -t custom-jenkins .
-    docker-compose -f docker-compose.yml up -d --build -e APP_PASSWORD=$apppassword
+    APP_PASSWORD=$apppassword docker-compose -f docker-compose.yml up -d --build
 else
     echo "This node is not a manager. Skipping manager-specific installations."
     type="worker"
