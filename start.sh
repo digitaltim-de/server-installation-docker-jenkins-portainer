@@ -7,21 +7,24 @@ new_password=""    # Initialize the password variable as empty
 project=""
 servername=""
 domain=""
-join=""
+swarmtoken=""
+swarmip=""
 serverip=$(hostname -I | awk '{print $1}')
+apppassword=$(openssl rand -base64 12)
+type="manager"
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --url=<url> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain> [--join=<DOCKERSWARMJOINTOKEN> [--serverip=<server_ip>]]"
+    echo "Usage: $0 --hookurl=<hookurl> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain> [--swarmtoken=<swarm_token> [--swarmip=<swarm_ip> [--serverip=<server_ip>]]]"
     exit 1
 }
 
 # Parse command line arguments
 for arg in "$@"; do
     case $arg in
-        --url=*)
-            url="${arg#*=}"
-            shift # Remove --url from processing
+        --hookurl=*)
+            hookurl="${arg#*=}"
+            shift # Remove --hookurl from processing
             ;;
         --newpassword=1)
             change_password=1
@@ -39,9 +42,13 @@ for arg in "$@"; do
             domain="${arg#*=}"
             shift # Remove --domain from processing
             ;;
-        --join=*)
-            join="${arg#*=}"
-            shift # Remove --join from processing
+        --swarmtoken=*)
+            swarmtoken="${arg#*=}"
+            shift # Remove --swarmtoken from processing
+            ;;
+        --swarmip=*)
+            swarmip="${arg#*=}"
+            shift # Remove --swarmip from processing
             ;;
         --serverip=*)
             serverip="${arg#*=}"
@@ -54,25 +61,18 @@ for arg in "$@"; do
 done
 
 # Check if required parameters were provided
-if [ -z "$url" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ] || [ -z "$serverip" ]; then
-    echo "Error: URL, project name, server name, serverip, and domain are required."
+if [ -z "$hookurl" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ] {
+    echo "Error: hookurl, project, servername, and domain are required."
     usage
 fi
 
-echo "Using URL: $url"
+echo "Using Hookurl: $hookurl"
 echo "Project: $project"
 echo "Server Name: $servername"
 echo "Domain: $domain"
+echo "Swarm IP: ${swarmip:-'Not Provided'}"
 echo "Server IP: $serverip"
-
-# Handle Docker Swarm initialization or joining
-if [ -n "$join" ]; then
-    echo "Joining Docker Swarm with token: $join"
-    docker swarm join --token $join $serverip:2377
-else
-    echo "Initializing new Docker Swarm"
-    docker swarm init
-fi
+echo "App Password: $apppassword"
 
 # Generate a random password and update root password if requested
 if [ "$change_password" -eq 1 ]; then
@@ -81,6 +81,18 @@ if [ "$change_password" -eq 1 ]; then
     echo "Root password has been changed."
 else
     echo "Root password change was not requested."
+fi
+
+# Install Cockpit
+if ! command -v cockpit &> /dev/null; then
+    echo "Cockpit is not installed. Installing Cockpit from backports..."
+    . /etc/os-release
+    sudo apt install -t ${VERSION_CODENAME}-backports cockpit -y
+    sudo systemctl enable cockpit.socket
+    sudo systemctl start cockpit.socket
+    echo "Cockpit has been installed from backports."
+else
+    echo "Cockpit is already installed."
 fi
 
 # Check if Docker is installed
@@ -107,31 +119,10 @@ else
     echo "Docker Compose is already installed."
 fi
 
-# Install Cockpit from backports
-if ! command -v cockpit &> /dev/null; then
-    echo "Cockpit is not installed. Installing Cockpit from backports..."
-    . /etc/os-release
-    sudo apt install -t ${VERSION_CODENAME}-backports cockpit -y
-    sudo systemctl enable cockpit.socket
-    sudo systemctl start cockpit.socket
-    echo "Cockpit has been installed from backports."
-else
-    echo "Cockpit is already installed."
-fi
-
-# Install htop
-if ! command -v htop &> /dev/null; then
-    echo "htop is not installed. Installing htop..."
-    sudo apt install htop -y
-    echo "htop has been installed."
-else
-    echo "htop is already installed."
-fi
-
-## Swarmpit
-# Check if this node is a manager and then install Swarmpit
+# Determine if this node is a manager and proceed accordingly
 if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "manager"; then
-    echo "This node is a manager. Installing Swarmpit."
+    echo "This node is a manager."
+    echo "Installing Swarmpit."
     docker run -it --rm \
       --name swarmpit-installer \
       --volume /var/run/docker.sock:/var/run/docker.sock \
@@ -139,16 +130,15 @@ if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "
       -e STACK_NAME=swarmpit \
       -e APP_PORT=65003 \
       swarmpit/install:edge
+    echo "Running docker-compose..."
+    docker build -t custom-jenkins .
+    docker-compose -f docker-compose.yml up -d --build -e APP_PASSWORD=$apppassword
 else
-    echo "Warning: This node is not a manager. Swarmpit cannot be installed here and will be skipped."
+    echo "This node is not a manager. Skipping manager-specific installations."
+    type="worker"
 fi
 
-# Run docker-compose.yml
-echo "Running docker-compose..."
-docker build -t custom-jenkins .
-docker-compose -f docker-compose.yml up -d --build
-
-# Register the server with the backend
-curl -X POST "${url}" \
+# Register the server with the backend regardless of the node type
+curl -X POST "${hookurl}" \
     -H "Content-Type: application/json" \
-    -d "{\"ip\": \"$serverip\", \"password\": \"$new_password\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\"}"
+    -d "{\"swarmip\": \"$swarmip\", \"serverip\": \"$serverip\", \"swarmtoken\": \"$swarmtoken\", \"password\": \"$new_password\", \"apppassword\": \"$apppassword\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\", \"type\": \"$type\"}"
