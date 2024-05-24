@@ -7,10 +7,12 @@ new_password=""    # Initialize the password variable as empty
 project=""
 servername=""
 domain=""
+join=""
+serverip=$(hostname -I | awk '{print $1}')
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --url=<url> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain>"
+    echo "Usage: $0 --url=<url> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain> [--join=<DOCKERSWARMJOINTOKEN> [--serverip=<server_ip>]]"
     exit 1
 }
 
@@ -37,6 +39,14 @@ for arg in "$@"; do
             domain="${arg#*=}"
             shift # Remove --domain from processing
             ;;
+        --join=*)
+            join="${arg#*=}"
+            shift # Remove --join from processing
+            ;;
+        --serverip=*)
+            serverip="${arg#*=}"
+            shift # Remove --serverip from processing
+            ;;
         *)
             usage # Unknown option
             ;;
@@ -44,8 +54,8 @@ for arg in "$@"; do
 done
 
 # Check if required parameters were provided
-if [ -z "$url" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ]; then
-    echo "Error: URL, project name, server name, and domain are required."
+if [ -z "$url" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ] || [ -z "$serverip" ]; then
+    echo "Error: URL, project name, server name, serverip and domain are required."
     usage
 fi
 
@@ -53,6 +63,16 @@ echo "Using URL: $url"
 echo "Project: $project"
 echo "Server Name: $servername"
 echo "Domain: $domain"
+echo "Server IP: $serverip"
+
+# Handle Docker Swarm initialization or joining
+if [ -n "$join" ]; then
+    echo "Joining Docker Swarm with token: $join"
+    docker swarm join --token $join $serverip:2377
+else
+    echo "Initializing new Docker Swarm"
+    docker swarm init
+fi
 
 # Generate a random password and update root password if requested
 if [ "$change_password" -eq 1 ]; then
@@ -82,7 +102,6 @@ if ! command -v docker-compose &> /dev/null; then
     sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-    sudo chmod 777 /var/run/docker.sock
     echo "Docker Compose has been installed."
 else
     echo "Docker Compose is already installed."
@@ -126,4 +145,4 @@ docker-compose -f docker-compose.yml up -d --build
 # Register the server with the backend
 curl -X POST "${url}" \
     -H "Content-Type: application/json" \
-    -d "{\"ip\": \"$(hostname -I | awk '{print $1}')\", \"password\": \"$new_password\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\"}"
+    -d "{\"ip\": \"$serverip\", \"password\": \"$new_password\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\"}"
