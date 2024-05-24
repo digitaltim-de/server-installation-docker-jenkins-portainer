@@ -25,6 +25,8 @@ services:
       - /usr/bin/docker:/usr/bin/docker
     networks:
       - server_base_network
+    environment:
+      APP_PASSWORD: ${APP_PASSWORD}
 
   portainer:
     image: portainer/portainer
