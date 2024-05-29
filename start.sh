@@ -119,6 +119,16 @@ else
     echo "Docker Compose is already installed."
 fi
 
+# if swarmtoken or swarmip is not provided, then we are not joining a swarm and we are a manager
+if [ -z "$swarmtoken" ] || [ -z "$swarmip" ]; then
+    echo "Swarm token or IP not provided. This node will be a manager."
+    type="manager"
+    docker swarm init
+else
+    echo "Swarm token and IP provided. This node will be a worker."
+    type="worker"
+fi
+
 # Determine if this node is a manager and proceed accordingly
 if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "manager"; then
     echo "This node is a manager."

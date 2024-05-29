@@ -2,7 +2,7 @@ version: '3'
 services:
   nginx-proxy-manager:
     image: 'jc21/nginx-proxy-manager:latest'
-    container_name: nginx-proxy-manager
+    container_name: nginx_proxy_manager
     restart: always
     ports:
       - '80:80'
