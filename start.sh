@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Initialize variables
-url=""
+hookurl=""
 change_password=0  # Control flag for changing the root password
 new_password=""    # Initialize the password variable as empty
 project=""
@@ -83,19 +83,7 @@ else
     echo "Root password change was not requested."
 fi
 
-# Install Cockpit
-if ! command -v cockpit &> /dev/null; then
-    echo "Cockpit is not installed. Installing Cockpit from backports..."
-    . /etc/os-release
-    sudo apt install -t ${VERSION_CODENAME}-backports cockpit -y
-    sudo systemctl enable cockpit.socket
-    sudo systemctl start cockpit.socket
-    echo "Cockpit has been installed from backports."
-else
-    echo "Cockpit is already installed."
-fi
-
-# Check if Docker is installed
+# Install and configure Docker environment
 if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Installing Docker..."
     curl -fsSL https://get.docker.com -o get-docker.sh
@@ -108,7 +96,6 @@ else
     echo "Docker is already installed."
 fi
 
-# Check if Docker Compose is installed
 if ! command -v docker-compose &> /dev/null; then
     echo "Docker Compose is not installed. Installing Docker Compose..."
     sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -119,18 +106,31 @@ else
     echo "Docker Compose is already installed."
 fi
 
-# if swarmtoken or swarmip is not provided, then we are not joining a swarm and we are a manager
+# Handle Docker Swarm operations
 if [ -z "$swarmtoken" ] || [ -z "$swarmip" ]; then
-    echo "Swarm token or IP not provided. This node will be a manager."
-    type="manager"
+    echo "Swarm token or IP not provided. This node will initialize a new Swarm as a manager."
     docker swarm init
+    type="manager"
 else
-    echo "Swarm token and IP provided. This node will be a worker."
+    echo "Swarm token and IP provided. This node will join the Swarm as a worker."
+    docker swarm join --token $swarmtoken $swarmip:2377
     type="worker"
 fi
 
+# Install Cockpit
+if ! command -v cockpit &> /dev/null; then
+    echo "Cockpit is not installed. Installing Cockpit from backports..."
+    . /etc/os-release
+    sudo apt install -t ${VERSION_CODENAME}-backports cockpit -y
+    sudo systemctl enable cockpit.socket
+    sudo systemctl start cockpit.socket
+    echo "Cockpit has been installed from backports."
+else
+    echo "Cockpit is already installed."
+fi
+
 # Determine if this node is a manager and proceed accordingly
-if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "manager"; then
+if [ "$type" = "manager" ]; then
     echo "This node is a manager."
     echo "Installing Swarmpit."
     docker run -it --rm \
@@ -145,7 +145,6 @@ if docker node inspect self --format '{{ .Spec.Role }}' 2>/dev/null | grep -qw "
     APP_PASSWORD=$apppassword docker-compose -f docker-compose.yml up -d --build
 else
     echo "This node is not a manager. Skipping manager-specific installations."
-    type="worker"
 fi
 
 # Register the server with the backend regardless of the node type
