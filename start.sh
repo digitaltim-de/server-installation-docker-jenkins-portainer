@@ -2,8 +2,8 @@
 
 # Initialize variables
 hookurl=""
-change_password=0  # Control flag for changing the root password
-new_password=""    # Initialize the password variable as empty
+change_password=0
+new_password=""
 project=""
 servername=""
 domain=""
@@ -12,10 +12,11 @@ swarmip=""
 serverip=$(hostname -I | awk '{print $1}')
 apppassword=$(openssl rand -base64 12)
 type="manager"
+swapsize=8  # Default swap size in GB
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --hookurl=<hookurl> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain> [--swarmtoken=<swarm_token> [--swarmip=<swarm_ip> [--serverip=<server_ip>]]]"
+    echo "Usage: $0 --hookurl=<hookurl> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain> [--swarmtoken=<swarm_token> [--swarmip=<swarm_ip> [--serverip=<server_ip> [--swap=<swap_size>]]]]"
     exit 1
 }
 
@@ -24,41 +25,61 @@ for arg in "$@"; do
     case $arg in
         --hookurl=*)
             hookurl="${arg#*=}"
-            shift # Remove --hookurl from processing
+            shift
             ;;
         --newpassword=1)
             change_password=1
-            shift # Remove --newpassword from processing
+            shift
             ;;
         --project=*)
             project="${arg#*=}"
-            shift # Remove --project from processing
+            shift
             ;;
         --servername=*)
             servername="${arg#*=}"
-            shift # Remove --servername from processing
+            shift
             ;;
         --domain=*)
             domain="${arg#*=}"
-            shift # Remove --domain from processing
+            shift
             ;;
         --swarmtoken=*)
             swarmtoken="${arg#*=}"
-            shift # Remove --swarmtoken from processing
+            shift
             ;;
         --swarmip=*)
             swarmip="${arg#*=}"
-            shift # Remove --swarmip from processing
+            shift
             ;;
         --serverip=*)
             serverip="${arg#*=}"
-            shift # Remove --serverip from processing
+            shift
+            ;;
+        --swap=*)
+            swapsize="${arg#*=}"
+            shift
             ;;
         *)
-            usage # Call usage function for unknown options
+            usage
             ;;
     esac
 done
+
+# Function to configure swap
+configure_swap() {
+    local swapsize_mb=$((swapsize * 1024))  # Convert GB to MB
+    echo "Configuring ${swapsize}GB of swap..."
+    sudo fallocate -l ${swapsize_mb}M /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
+}
+
+# Configure swap if swapsize is not the default, or always configure if you prefer
+if [ "$swapsize" -ne 8 ]; then
+    configure_swap
+fi
 
 # Check for required arguments
 if [ -z "$hookurl" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ]; then
