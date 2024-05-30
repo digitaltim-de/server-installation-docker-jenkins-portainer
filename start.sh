@@ -156,17 +156,10 @@ fi
 # Determine if this node is a manager and proceed accordingly
 if [ "$type" = "manager" ]; then
     echo "This node is a manager."
-    echo "Installing Swarmpit."
-    docker run -it --rm \
-      --name swarmpit-installer \
-      --volume /var/run/docker.sock:/var/run/docker.sock \
-      -e INTERACTIVE=0 \
-      -e STACK_NAME=swarmpit \
-      -e APP_PORT=65003 \
-      swarmpit/install:edge
     echo "Running docker-compose..."
-    docker build -t custom-jenkins .
-    APP_PASSWORD=$apppassword docker-compose -f docker-compose.yml up -d --build
+    APP_PASSWORD=$apppassword docker-compose -f docker-compose.server.yml up -d --build
+    APP_PASSWORD=$apppassword docker-compose -f docker-compose.swarmpit.yml up -d --build
+    echo "Docker services have been started."
 else
     echo "This node is not a manager. Skipping manager-specific installations."
 fi
@@ -175,3 +168,5 @@ fi
 curl -X POST "${hookurl}" \
     -H "Content-Type: application/json" \
     -d "{\"serverip\": \"$serverip\", \"swarmip\": \"$swarmip\", \"swarmtoken\": \"$swarmtoken\", \"password\": \"$new_password\", \"apppassword\": \"$apppassword\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\", \"type\": \"$type\"}"
+
+exit 0
