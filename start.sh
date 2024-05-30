@@ -148,6 +148,7 @@ if ! command -v cockpit &> /dev/null; then
     sudo systemctl enable cockpit.socket
     sudo systemctl start cockpit.socket
     echo "Cockpit has been installed from backports."
+    sudo rm -rf /etc/cockpit/disallowed-users
 else
     echo "Cockpit is already installed."
 fi
