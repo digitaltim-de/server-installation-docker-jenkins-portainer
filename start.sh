@@ -14,6 +14,9 @@ apppassword=$(openssl rand -base64 12)
 type="manager"
 swapsize=8  # Default swap size in GB
 
+## Change the hostname
+sudo hostnamectl set-hostname $servername
+
 # Function to display usage
 usage() {
     echo "Usage: $0 --hookurl=<hookurl> [--newpassword=1] --project=<project_name> --servername=<server_name> --domain=<domain> [--swarmtoken=<swarm_token> [--swarmip=<swarm_ip> [--serverip=<server_ip> [--swap=<swap_size>]]]]"
@@ -166,7 +169,8 @@ if [ "$type" = "manager" ]; then
     echo "This node is a manager."
     echo "Running docker-compose..."
     APP_PASSWORD=$apppassword docker compose -f docker-compose.server.yml up -d --build
-    APP_PASSWORD=$apppassword docker stack deploy -c docker-compose.swarmpit.yml swarmpit
+    APP_PASSWORD=$apppassword docker stack deploy -c docker-stack.swarmpit.yml swarmpit
+    APP_PASSWORD=$apppassword docker compose -f docker-compose.backup.yml up -d --build
     echo "Docker services have been started."
 else
     echo "This node is not a manager. Skipping manager-specific installations."

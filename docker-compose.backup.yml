@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  elkarbackup:
+    image: elkarbackup/elkarbackup:latest
+    environment:
+      SYMFONY__DATABASE__PASSWORD: "jkfd9845tbkgj9o3nkjdcsauv83i4refwge"
+      EB_CRON: "enabled"
+    volumes:
+      - backups:/app/backups
+      - uploads:/app/uploads
+      - sshkeys:/app/.ssh
+    ports:
+      - 65004:80
+
+  db:
+    image: mysql:5.7.22
+    environment:
+      MYSQL_ROOT_PASSWORD: "jkfd9845tbkgj9o3nkjdcsauv83i4refwge"
+    volumes:
+      - db:/var/lib/mysql
+
+volumes:
+  db:
+  backups:
+  uploads:
+  sshkeys:
