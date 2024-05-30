@@ -67,19 +67,27 @@ done
 
 # Function to configure swap
 configure_swap() {
-    local swapsize_mb=$((swapsize * 1024))  # Convert GB to MB
-    echo "Configuring ${swapsize}GB of swap..."
-    sudo fallocate -l ${swapsize_mb}M /swapfile
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
+    echo "Configuring a new swap file with size ${swapsize}G..."
+    sudo swapoff -a && sudo dd if=/dev/zero of=/swapfile bs=1G count=${swapsize} && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+    echo "Swap configuration complete."
 }
 
-# Configure swap if swapsize is not the default, or always configure if you prefer
-if [ "$swapsize" -ne 8 ]; then
-    configure_swap
+# Check if swapsize is provided and is a numerical value
+if [ -z "${swapsize}" ]; then
+    echo "Swap size is not set. Exiting..."
+    exit 1
+elif ! [[ "${swapsize}" =~ ^[0-9]+$ ]]; then
+    echo "Swap size must be a number. Exiting..."
+    exit 1
 fi
+
+# Configure swap if swapsize is not the default (8G), or always configure if you prefer
+if [ "${swapsize}" -ne 8 ]; then
+    configure_swap
+else
+    echo "Swap size is the default (8G). No changes made."
+fi
+
 
 # Check for required arguments
 if [ -z "$hookurl" ] || [ -z "$project" ] || [ -z "$servername" ] || [ -z "$domain" ]; then
