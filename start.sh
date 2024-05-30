@@ -110,6 +110,8 @@ fi
 if [ -z "$swarmtoken" ] || [ -z "$swarmip" ]; then
     echo "Swarm token or IP not provided. This node will initialize a new Swarm as a manager."
     docker swarm init
+    swarmtoken=$(docker swarm join-token manager -q)
+    swarmip=$serverip
     type="manager"
 else
     echo "Swarm token and IP provided. This node will join the Swarm as a worker."
@@ -150,4 +152,4 @@ fi
 # Register the server with the backend regardless of the node type
 curl -X POST "${hookurl}" \
     -H "Content-Type: application/json" \
-    -d "{\"swarmip\": \"$swarmip\", \"serverip\": \"$serverip\", \"swarmtoken\": \"$swarmtoken\", \"password\": \"$new_password\", \"apppassword\": \"$apppassword\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\", \"type\": \"$type\"}"
+    -d "{\"serverip\": \"$serverip\", \"swarmip\": \"$swarmip\", \"swarmtoken\": \"$swarmtoken\", \"password\": \"$new_password\", \"apppassword\": \"$apppassword\", \"project\": \"$project\", \"servername\": \"$servername\", \"domain\": \"$domain\", \"type\": \"$type\"}"
