@@ -170,7 +170,6 @@ if [ "$type" = "manager" ]; then
     echo "Running docker-compose..."
     APP_PASSWORD=$apppassword docker compose -f docker-compose.server.yml up -d --build
     APP_PASSWORD=$apppassword docker stack deploy -c docker-stack.swarmpit.yml swarmpit
-    APP_PASSWORD=$apppassword docker compose -f docker-compose.backup.yml up -d --build
     echo "Docker services have been started."
 else
     echo "This node is not a manager. Skipping manager-specific installations."
