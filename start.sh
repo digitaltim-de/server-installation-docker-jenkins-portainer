@@ -173,7 +173,7 @@ else
 fi
 
 # Set ownership and permissions for the Jenkins folder
-sudo chown -R jenkins:jenkins /var/jenkins_home
+sudo chown -R 1000:1000 /var/jenkins_home
 sudo chmod -R 755 /var/jenkins_home
 echo "Ownership and permissions set for /var/jenkins_home."
 
