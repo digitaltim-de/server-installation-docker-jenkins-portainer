@@ -164,6 +164,19 @@ else
     echo "Cockpit is already installed."
 fi
 
+# Generate jenkins folder if it doesn't exist
+if [ ! -d /var/jenkins_home ]; then
+    sudo mkdir /var/jenkins_home
+    echo "Created /var/jenkins_home directory."
+else
+    echo "/var/jenkins_home already exists."
+fi
+
+# Set ownership and permissions for the Jenkins folder
+sudo chown -R jenkins:jenkins /var/jenkins_home
+sudo chmod -R 755 /var/jenkins_home
+echo "Ownership and permissions set for /var/jenkins_home."
+
 # Determine if this node is a manager and proceed accordingly
 if [ "$type" = "manager" ]; then
     echo "This node is a manager."
